@@ -21,8 +21,7 @@ import javax.swing.JPanel;
 
 public class Client extends JFrame implements ActionListener, MouseListener, Runnable
 {
-	private static final String SERVER_IP = "192.168.1.7";
-	//private static final String SERVER_IP = "24.177.249.144";
+	private static final String SERVER_IP = ""; //Put server ip here
 	private static final int SERVER_PORT = 9000;
 	
 	private Socket socket;
@@ -985,6 +984,7 @@ public class Client extends JFrame implements ActionListener, MouseListener, Run
 				}
 			}
 		
+			deselectAll();
 			selected = -2;
 			
 			for(int i = 0; i < 13; i++)
