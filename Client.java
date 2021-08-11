@@ -18,10 +18,10 @@ import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JTextField;
 
 public class Client extends JFrame implements ActionListener, MouseListener, Runnable
 {
-	private static final String SERVER_IP = ""; //Put server ip here
 	private static final int SERVER_PORT = 9000;
 	
 	private Socket socket;
@@ -34,6 +34,8 @@ public class Client extends JFrame implements ActionListener, MouseListener, Run
 	private JLabel stratego;
 	private JButton readyButton;
 	private JButton advanceButton;
+	private JTextField ipInput;
+	private JLabel ipError;
 	
 	private boolean inGame = false;
 	private boolean startPhase = false;
@@ -42,6 +44,7 @@ public class Client extends JFrame implements ActionListener, MouseListener, Run
 	private boolean myTurn = false;
 	private boolean battlePhase1 = false;
 	private boolean battlePhase2 = false;
+	private boolean connectionError = false;
 	
 	private String myPiece;
 	private String oppPiece;
@@ -78,7 +81,7 @@ public class Client extends JFrame implements ActionListener, MouseListener, Run
 	
 	public void createConnection() throws IOException
 	{
-		socket = new Socket(SERVER_IP, SERVER_PORT);
+		socket = new Socket(ipInput.getText(), SERVER_PORT);
 		in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 		out = new PrintWriter(socket.getOutputStream(), true);
 	}
@@ -121,6 +124,11 @@ public class Client extends JFrame implements ActionListener, MouseListener, Run
 		connectButton.setBounds(300, 300, 300, 80);
 		connectButton.addActionListener(this);
 		pan.add(connectButton);
+		
+		ipInput = new JTextField("Enter IP of Host");
+		ipInput.setBounds(300, 400, 300, 30);
+		ipInput.addActionListener(this);
+		pan.add(ipInput);
 	}
 	
 	public void makeBoard()
@@ -560,9 +568,30 @@ public class Client extends JFrame implements ActionListener, MouseListener, Run
 	{
 		if(e.getSource() == connectButton)
 		{
-			pan.remove(connectButton);
-			Thread t = new Thread(this);
-			t.start();
+			try 
+			{
+				createConnection();
+				pan.remove(connectButton);
+				pan.remove(ipInput);
+				if(connectionError)
+					pan.remove(ipError);
+				Thread t = new Thread(this);
+				t.start();
+			} 
+			catch (IOException e1) 
+			{
+				// TODO Auto-generated catch block
+				if(!connectionError)
+				{
+					ipError = new JLabel("Connection Failed");
+					ipError.setBounds(400, 450, 300, 30);
+					pan.add(ipError);
+					connectionError = true;
+				}
+				e1.printStackTrace();
+			}
+			
+			
 		}
 		
 		if(e.getSource() == readyButton)
@@ -589,17 +618,7 @@ public class Client extends JFrame implements ActionListener, MouseListener, Run
 
 	@Override
 	public void run() 
-	{
-		try 
-		{
-			createConnection();
-		} 
-		catch (IOException e1) 
-		{
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-		
+	{	
 		startPhase();
 		
 		while(inGame)
