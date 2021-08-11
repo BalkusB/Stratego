@@ -67,6 +67,8 @@ public class Server extends JFrame implements ActionListener, MouseListener, Run
 	
 	private MyPanel pan;
 	
+	private final Color LIGHT_BLUE = new Color(54, 88, 224);
+	
 	public static void main(String[] args) throws IOException
 	{
 		Server server = new Server();
@@ -865,7 +867,7 @@ public class Server extends JFrame implements ActionListener, MouseListener, Run
 				{
 					for(Piece p : oppPieces)
 					{
-						g.setColor(Color.cyan);
+						g.setColor(LIGHT_BLUE);
 						g.fillRect(25 + p.getX() * 50, 25 + p.getY() * 50, 40, 40);
 					}
 				}
@@ -877,7 +879,7 @@ public class Server extends JFrame implements ActionListener, MouseListener, Run
 					g.drawString("It is your opponent's turn to move", 20, 595);
 				}
 				
-				g.setColor(Color.cyan);
+				g.setColor(LIGHT_BLUE);
 				g.drawLine(45 + lastMovepx * 50, 45 + lastMovepy * 50, 45 + lastMovex * 50, 45 + lastMovey * 50);
 				
 				if(battlePhase1)
@@ -891,7 +893,7 @@ public class Server extends JFrame implements ActionListener, MouseListener, Run
 					else
 						g.drawString(myPiece, 675, 230);
 					
-					g.setColor(Color.cyan);
+					g.setColor(LIGHT_BLUE);
 					g.fillRect(610, 310, 210, 200);
 					g.setColor(Color.black);
 					g.setFont(new Font("",Font.PLAIN, 120));
@@ -920,7 +922,7 @@ public class Server extends JFrame implements ActionListener, MouseListener, Run
 					
 					if(battle == 2 || battle == 5)
 					{
-						g.setColor(Color.cyan);
+						g.setColor(LIGHT_BLUE);
 						g.fillRect(610, 310, 210, 200);
 						g.setColor(Color.black);
 						g.setFont(new Font("",Font.PLAIN, 120));

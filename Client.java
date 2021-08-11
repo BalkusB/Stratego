@@ -64,6 +64,8 @@ public class Client extends JFrame implements ActionListener, MouseListener, Run
 	
 	private int battle;
 	
+	private final Color LIGHT_BLUE = new Color(54, 88, 224);
+	
 	private ArrayList<Piece> myPieces = new ArrayList<Piece>();
 	private ArrayList<Piece> oppPieces = new ArrayList<Piece>();
 	
@@ -768,7 +770,7 @@ public class Client extends JFrame implements ActionListener, MouseListener, Run
 				
 				if(startPhase)
 				{
-					g.setColor(Color.cyan);
+					g.setColor(LIGHT_BLUE);
 					for(int i = 0; i < 13; i++)
 					{
 						g.fillRect(25 + i * 50, 540, 40, 40);
@@ -815,7 +817,7 @@ public class Client extends JFrame implements ActionListener, MouseListener, Run
 				
 				for(Piece p : myPieces)
 				{
-					g.setColor(Color.cyan);
+					g.setColor(LIGHT_BLUE);
 					if(p.getSelected())
 						g.setColor(Color.yellow);
 					g.fillRect(25 + p.getX() * 50, 25 + p.getY() * 50, 40, 40);
@@ -884,7 +886,7 @@ public class Client extends JFrame implements ActionListener, MouseListener, Run
 				
 				if(battlePhase1)
 				{
-					g.setColor(Color.cyan);
+					g.setColor(LIGHT_BLUE);
 					g.fillRect(610, 90, 200, 200);
 					g.setColor(Color.black);
 					g.setFont(new Font("",Font.PLAIN, 120));
@@ -910,7 +912,7 @@ public class Client extends JFrame implements ActionListener, MouseListener, Run
 				{
 					if(battle == 1 || battle == 4)
 					{
-						g.setColor(Color.cyan);
+						g.setColor(LIGHT_BLUE);
 						g.fillRect(610, 90, 200, 200);
 						g.setColor(Color.black);
 						g.setFont(new Font("",Font.PLAIN, 120));
