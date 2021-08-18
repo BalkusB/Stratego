@@ -37,6 +37,7 @@ public class Client extends JFrame implements ActionListener, MouseListener, Run
 	private JTextField ipInput;
 	private JLabel ipError;
 	
+	//track game states
 	private boolean inGame = false;
 	private boolean startPhase = false;
 	private boolean oppReady = false;
@@ -46,22 +47,28 @@ public class Client extends JFrame implements ActionListener, MouseListener, Run
 	private boolean battlePhase2 = false;
 	private boolean connectionError = false;
 	
+	//track pieces involved in a battle
 	private String myPiece;
 	private String oppPiece;
 	
+	//track location of battle
 	private int battleX;
 	private int battleY;
 	
+	//track piece type selected in start phase
 	private int selected = - 2;
 	
+	//track last move properties
 	private int lastMovepx;
 	private int lastMovepy;
 	private int lastMovex;
 	private int lastMovey;
 	
+	//track piece indices to be removed
 	private int myToRemove = -1;
 	private int oppToRemove = -1;
 	
+	//track result of a battle
 	private int battle;
 	
 	private final Color LIGHT_BLUE = new Color(54, 88, 224);
@@ -96,6 +103,7 @@ public class Client extends JFrame implements ActionListener, MouseListener, Run
 		System.exit(0);
 	}
 	
+	//begin start phase
 	public void startPhase()
 	{
 		inGame = true;
@@ -420,7 +428,7 @@ public class Client extends JFrame implements ActionListener, MouseListener, Run
 	
 	public boolean spaceOccupied2(int x, int y)
 	{
-		for(Piece p : myPieces)
+		for(Piece p : oppPieces)
 			if(p.getX() == x && p.getY() == y)
 				return true;
 		return false;
@@ -434,7 +442,8 @@ public class Client extends JFrame implements ActionListener, MouseListener, Run
 		return "Error Piece not Found";
 	}
 	
-	public int simBattle(String mine, String opp, boolean attacking)//returns: 1. Win, 2. Loss, 3. Draw, 4. Opp Flag Captured, 5. Our Flag Captured
+	//returns: 1. Win, 2. Loss, 3. Draw, 4. Opp Flag Captured, 5. Our Flag Captured
+	public int simBattle(String mine, String opp, boolean attacking)
 	{
 		myPiece = mine;
 		oppPiece = opp;
@@ -625,100 +634,18 @@ public class Client extends JFrame implements ActionListener, MouseListener, Run
 		
 		while(inGame)
 		{
-			String s = "";
-			try 
-			{
-				s = in.readLine();
-			} 
-			catch (IOException e1) 
-			{
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			}
+			String s = waitForMessage();
 			
-			while(battlePhase1 || battlePhase2)
-			{
-				try 
-				{
-					Thread.sleep(100);
-				} 
-				catch (InterruptedException e) 
-				{
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
+			waitForBattle();
 			
 			if(s.equals("Ready"))
-			{
 				oppReady = true;
-			}
-			
 			if(s.contains("Move"))
-			{
-				int x1 = translateNum(Character.getNumericValue(s.charAt(5)));
-				int y1 = translateNum(Character.getNumericValue(s.charAt(6)));
-				int x2 = translateNum(Character.getNumericValue(s.charAt(7)));
-				int y2 = translateNum(Character.getNumericValue(s.charAt(8)));
-				String oppType = s.substring(9);
-				
-				moveOpp(x1, y1, x2, y2);
-				lastMovepx = x1;
-				lastMovepy = y1;
-				lastMovex = x2;
-				lastMovey = y2;
-				
-				if(spaceOccupied(x2, y2))
-				{
-					out.println("Resp " + x2 + y2 + getType(x2, y2));
-					battle = simBattle(getType(x2, y2), oppType, false);
-					if(battle == 1 || battle == 4)
-						captureOppPiece(x2, y2);
-					if(battle == 2 || battle == 5)
-						captureMyPiece(x2, y2);
-					if(battle == 3)
-					{
-						captureMyPiece(x2, y2);
-						captureOppPiece(x2, y2);
-					}
-					
-					battleX = x2;
-					battleY = y2;
-					
-					battlePhase1 = true;
-				}
-				
-				myTurn = true;
-			}
-			
+				recievedMoveMessage(s);
 			if(s.contains("Resp"))
-			{
-				int x = translateNum(Character.getNumericValue(s.charAt(5)));
-				int y = translateNum(Character.getNumericValue(s.charAt(6)));
-				String oppType = s.substring(7);
-				
-				battle = simBattle(getType(x, y), oppType, true);
-				
-				if(battle == 1 || battle == 4)
-					captureOppPiece(x, y);
-				if(battle == 2 || battle == 5)
-					captureMyPiece(x, y);
-				if(battle == 3)
-				{
-					captureMyPiece(x, y);
-					captureOppPiece(x, y);
-				}
-				
-				battleX = x;
-				battleY = y;
-				
-				battlePhase1 = true;
-			}
-			
+				recievedResponseMessage(s);
 			if(s.contains("I Lost"))
-			{
 				gameOver(true);
-			}
 			
 			try 
 			{
@@ -729,6 +656,98 @@ public class Client extends JFrame implements ActionListener, MouseListener, Run
 				e.printStackTrace();
 			}
 		}
+	}
+	
+	public String waitForMessage()
+	{
+		String s = "";
+		try 
+		{
+			s = in.readLine();
+		} 
+		catch (IOException e1) 
+		{
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		return s;
+	}
+	
+	public void waitForBattle()
+	{
+		while(battlePhase1 || battlePhase2)
+		{
+			try 
+			{
+				Thread.sleep(100);
+			} 
+			catch (InterruptedException e) 
+			{
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	public void recievedMoveMessage(String s)
+	{
+		int x1 = translateNum(Character.getNumericValue(s.charAt(5)));
+		int y1 = translateNum(Character.getNumericValue(s.charAt(6)));
+		int x2 = translateNum(Character.getNumericValue(s.charAt(7)));
+		int y2 = translateNum(Character.getNumericValue(s.charAt(8)));
+		String oppType = s.substring(9);
+		
+		moveOpp(x1, y1, x2, y2);
+		lastMovepx = x1;
+		lastMovepy = y1;
+		lastMovex = x2;
+		lastMovey = y2;
+		
+		if(spaceOccupied(x2, y2))
+		{
+			out.println("Resp " + x2 + y2 + getType(x2, y2));
+			battle = simBattle(getType(x2, y2), oppType, false);
+			if(battle == 1 || battle == 4)
+				captureOppPiece(x2, y2);
+			if(battle == 2 || battle == 5)
+				captureMyPiece(x2, y2);
+			if(battle == 3)
+			{
+				captureMyPiece(x2, y2);
+				captureOppPiece(x2, y2);
+			}
+			
+			battleX = x2;
+			battleY = y2;
+			
+			battlePhase1 = true;
+		}
+		
+		myTurn = true;
+	}
+	
+	public void recievedResponseMessage(String s)
+	{
+		int x = translateNum(Character.getNumericValue(s.charAt(5)));
+		int y = translateNum(Character.getNumericValue(s.charAt(6)));
+		String oppType = s.substring(7);
+		
+		battle = simBattle(getType(x, y), oppType, true);
+		
+		if(battle == 1 || battle == 4)
+			captureOppPiece(x, y);
+		if(battle == 2 || battle == 5)
+			captureMyPiece(x, y);
+		if(battle == 3)
+		{
+			captureMyPiece(x, y);
+			captureOppPiece(x, y);
+		}
+		
+		battleX = x;
+		battleY = y;
+		
+		battlePhase1 = true;
 	}
 	
 	private class MyPanel extends JPanel
@@ -752,57 +771,14 @@ public class Client extends JFrame implements ActionListener, MouseListener, Run
 		public void drawStuff(Graphics g) throws InterruptedException
 		{
 			if(inGame)
-			{
-				stratego.setBounds(600, 10, 800, 70);
-				
-				for(int i = 0; i < 11; i++)
-				{
-					g.drawLine(20 + i * 50, 20, 20 + i * 50, 520);
-				}
-				
-				for(int i = 0; i < 11; i++)
-				{
-					g.drawLine(20, 20 + i * 50, 520, 20 + i * 50);
-				}
-				
-				g.fillRect(120, 220, 100, 100);
-				g.fillRect(320, 220, 100, 100);
-				
+			{	
+				drawBoard(g);
 				if(startPhase)
 				{
-					g.setColor(LIGHT_BLUE);
-					for(int i = 0; i < 13; i++)
-					{
-						g.fillRect(25 + i * 50, 540, 40, 40);
-					}
-					
-					g.setColor(Color.yellow);
-					g.fillRect(25 + selected * 50, 540, 40, 40);
-					
-					for(int i = 0; i < 8; i++)
-					{
-						g.setColor(Color.black);
-						g.setFont(new Font("",Font.PLAIN, 30));
-						g.drawString("" + (i + 2), 35 + i * 50, 570);
-					}
-					g.drawString("10", 427, 570);
-					g.drawString("S", 485, 570);
-					g.drawString("B", 535, 570);
-					g.drawString("F", 585, 570);
-					g.drawString("X", 635, 570);
-					
-					for(int i = 0; i < 8; i++)
-					{
-						g.setColor(Color.black);
-						g.setFont(new Font("",Font.PLAIN, 15));
-						g.drawString("(" + getNumberUnplaced("" + (i + 2)) + ")", 35 + i * 50, 595);
-					}
-					g.drawString("(" + getNumberUnplaced("10") + ")", 435, 595);
-					g.drawString("(" + getNumberUnplaced("S") + ")", 485, 595);
-					g.drawString("(" + getNumberUnplaced("B") + ")", 535, 595);
-					g.drawString("(" + getNumberUnplaced("F") + ")", 585, 595);
+					drawStartPhaseComponents(g);
 				}
 				
+				//Remove pieces to be removed here in order to prevent modifying during a For loop from other thread
 				if(myToRemove != -1)
 				{
 					myPieces.remove(myToRemove);
@@ -815,76 +791,177 @@ public class Client extends JFrame implements ActionListener, MouseListener, Run
 					oppToRemove = -1;
 				}
 				
-				for(Piece p : myPieces)
-				{
-					g.setColor(LIGHT_BLUE);
-					if(p.getSelected())
-						g.setColor(Color.yellow);
-					g.fillRect(25 + p.getX() * 50, 25 + p.getY() * 50, 40, 40);
-					g.setColor(Color.black);
-					g.setFont(new Font("",Font.PLAIN, 15));
-					if(p.getType().equals("10"))
-						g.drawString(p.getType(), 35 + p.getX() * 50, 50 + p.getY() * 50);
-					else
-						g.drawString(p.getType(), 40 + p.getX() * 50, 50 + p.getY() * 50);
-				}
-				
+				drawMyPieces(g);
 			}
 			
 			if(gameStarted)
 			{
-				if(myTurn)
+				drawTurnText(g);
+				drawValidMoves(g);
+				drawOpposingPieces(g);
+				drawLastMove(g);
+				drawBattle(g);
+			}
+			
+			checkToUpdateTurn();
+			repaint();
+		}
+		
+		public void drawBoard(Graphics g)
+		{
+			stratego.setBounds(600, 10, 800, 70);
+			
+			for(int i = 0; i < 11; i++)
+			{
+				g.drawLine(20 + i * 50, 20, 20 + i * 50, 520);
+			}
+			
+			for(int i = 0; i < 11; i++)
+			{
+				g.drawLine(20, 20 + i * 50, 520, 20 + i * 50);
+			}
+			
+			g.fillRect(120, 220, 100, 100);
+			g.fillRect(320, 220, 100, 100);
+		}
+		
+		public void drawStartPhaseComponents(Graphics g)
+		{
+			g.setColor(LIGHT_BLUE);
+			for(int i = 0; i < 13; i++)
+			{
+				g.fillRect(25 + i * 50, 540, 40, 40);
+			}
+			
+			g.setColor(Color.yellow);
+			g.fillRect(25 + selected * 50, 540, 40, 40);
+			
+			for(int i = 0; i < 8; i++)
+			{
+				g.setColor(Color.black);
+				g.setFont(new Font("",Font.PLAIN, 30));
+				g.drawString("" + (i + 2), 35 + i * 50, 570);
+			}
+			g.drawString("10", 427, 570);
+			g.drawString("S", 485, 570);
+			g.drawString("B", 535, 570);
+			g.drawString("F", 585, 570);
+			g.drawString("X", 635, 570);
+			
+			for(int i = 0; i < 8; i++)
+			{
+				g.setColor(Color.black);
+				g.setFont(new Font("",Font.PLAIN, 15));
+				g.drawString("(" + getNumberUnplaced("" + (i + 2)) + ")", 35 + i * 50, 595);
+			}
+			g.drawString("(" + getNumberUnplaced("10") + ")", 435, 595);
+			g.drawString("(" + getNumberUnplaced("S") + ")", 485, 595);
+			g.drawString("(" + getNumberUnplaced("B") + ")", 535, 595);
+			g.drawString("(" + getNumberUnplaced("F") + ")", 585, 595);
+		}
+		
+		public void drawMyPieces(Graphics g)
+		{
+			for(Piece p : myPieces)
+			{
+				g.setColor(LIGHT_BLUE);
+				if(p.getSelected())
+					g.setColor(Color.yellow);
+				g.fillRect(25 + p.getX() * 50, 25 + p.getY() * 50, 40, 40);
+				g.setColor(Color.black);
+				g.setFont(new Font("",Font.PLAIN, 15));
+				if(p.getType().equals("10"))
+					g.drawString(p.getType(), 35 + p.getX() * 50, 50 + p.getY() * 50);
+				else
+					g.drawString(p.getType(), 40 + p.getX() * 50, 50 + p.getY() * 50);
+			}
+		}
+		
+		public void drawTurnText(Graphics g)
+		{
+			g.setColor(Color.black);
+			g.setFont(new Font("",Font.PLAIN, 30));
+			if(myTurn)
+				g.drawString("It is your turn to move", 20, 595);
+			else
+				g.drawString("It is your opponent's turn to move", 20, 595);
+		}
+		
+		public void drawValidMoves(Graphics g)
+		{
+			if(pieceSelected())
+			{
+				Piece temp = new Piece("0");
+				for(Piece p : myPieces)
 				{
-					g.setColor(Color.black);
-					g.setFont(new Font("",Font.PLAIN, 30));
-					g.drawString("It is your turn to move", 20, 595);
-					
-					if(pieceSelected())
+					if(p.getSelected())
 					{
-						Piece temp = new Piece("0");
-						for(Piece p : myPieces)
-						{
-							if(p.getSelected())
-							{
-								temp = p;
-								break;
-							}
-						}
-						
-						for(int i = 0; i < 10; i++)
-						{
-							for(int i2 = 0; i2 < 10; i2++)
-							{
-								if(validMove(temp, i, i2))
-								{
-									g.setColor(Color.YELLOW);
-									g.fillRect(21 + i * 50, 21 + i2 * 50, 49, 49);
-								}
-							}
-						}
+						temp = p;
+						break;
 					}
 				}
 				
-				if(gameStarted)
+				for(int i = 0; i < 10; i++)
 				{
-					for(Piece p : oppPieces)
+					for(int i2 = 0; i2 < 10; i2++)
 					{
-						g.setColor(Color.red);
-						g.fillRect(25 + p.getX() * 50, 25 + p.getY() * 50, 40, 40);
+						if(validMove(temp, i, i2))
+						{
+							g.setColor(Color.YELLOW);
+							g.fillRect(21 + i * 50, 21 + i2 * 50, 49, 49);
+						}
 					}
 				}
-				
-				if(!myTurn && gameStarted)
-				{
-					g.setColor(Color.black);
-					g.setFont(new Font("",Font.PLAIN, 30));
-					g.drawString("It is your opponent's turn to move", 20, 595);
-				}
+			}
+		}
+		
+		public void drawOpposingPieces(Graphics g)
+		{
+			for(Piece p : oppPieces)
+			{
+				g.setColor(Color.red);
+				g.fillRect(25 + p.getX() * 50, 25 + p.getY() * 50, 40, 40);
+			}
+		}
+		
+		public void drawLastMove(Graphics g)
+		{
+			g.setColor(Color.red);
+			g.drawLine(45 + lastMovepx * 50, 45 + lastMovepy * 50, 45 + lastMovex * 50, 45 + lastMovey * 50);
+		}
+		
+		public void drawBattle(Graphics g)
+		{
+			//Draw both pieces in battle (phase 1)
+			if(battlePhase1)
+			{
+				g.setColor(LIGHT_BLUE);
+				g.fillRect(610, 90, 200, 200);
+				g.setColor(Color.black);
+				g.setFont(new Font("",Font.PLAIN, 120));
+				if(myPiece.equals("10"))
+					g.drawString(myPiece, 640, 230);
+				else
+					g.drawString(myPiece, 675, 230);
 				
 				g.setColor(Color.red);
-				g.drawLine(45 + lastMovepx * 50, 45 + lastMovepy * 50, 45 + lastMovex * 50, 45 + lastMovey * 50);
+				g.fillRect(610, 310, 210, 200);
+				g.setColor(Color.black);
+				g.setFont(new Font("",Font.PLAIN, 120));
+				if(oppPiece.equals("10"))
+					g.drawString(oppPiece, 640, 450);
+				else
+					g.drawString(oppPiece, 675, 450);
 				
-				if(battlePhase1)
+				//Draw line from square battle took place on to make it clear
+				g.setColor(Color.yellow);
+				g.drawLine(45 + battleX * 50, 45 + battleY * 50, 710, 300);
+			}
+			
+			//Draw only piece that survived to incidate this (phase 2)
+			if(battlePhase2)
+			{
+				if(battle == 1 || battle == 4)
 				{
 					g.setColor(LIGHT_BLUE);
 					g.fillRect(610, 90, 200, 200);
@@ -894,7 +971,10 @@ public class Client extends JFrame implements ActionListener, MouseListener, Run
 						g.drawString(myPiece, 640, 230);
 					else
 						g.drawString(myPiece, 675, 230);
-					
+				}
+				
+				if(battle == 2 || battle == 5)
+				{
 					g.setColor(Color.red);
 					g.fillRect(610, 310, 210, 200);
 					g.setColor(Color.black);
@@ -903,49 +983,22 @@ public class Client extends JFrame implements ActionListener, MouseListener, Run
 						g.drawString(oppPiece, 640, 450);
 					else
 						g.drawString(oppPiece, 675, 450);
-					
-					g.setColor(Color.yellow);
-					g.drawLine(45 + battleX * 50, 45 + battleY * 50, 710, 300);
 				}
 				
-				if(battlePhase2)
-				{
-					if(battle == 1 || battle == 4)
-					{
-						g.setColor(LIGHT_BLUE);
-						g.fillRect(610, 90, 200, 200);
-						g.setColor(Color.black);
-						g.setFont(new Font("",Font.PLAIN, 120));
-						if(myPiece.equals("10"))
-							g.drawString(myPiece, 640, 230);
-						else
-							g.drawString(myPiece, 675, 230);
-					}
-					
-					if(battle == 2 || battle == 5)
-					{
-						g.setColor(Color.red);
-						g.fillRect(610, 310, 210, 200);
-						g.setColor(Color.black);
-						g.setFont(new Font("",Font.PLAIN, 120));
-						if(oppPiece.equals("10"))
-							g.drawString(oppPiece, 640, 450);
-						else
-							g.drawString(oppPiece, 675, 450);
-					}
-					
-					g.setColor(Color.yellow);
-					g.drawLine(45 + battleX * 50, 45 + battleY * 50, 710, 300);
-				}
+				//Draw line from square battle took place on to make it clear
+				g.setColor(Color.yellow);
+				g.drawLine(45 + battleX * 50, 45 + battleY * 50, 710, 300);
 			}
-			
+		}
+		
+		public void checkToUpdateTurn()
+		{
 			if(startPhase == false && oppReady == true && gameStarted == false)
 			{
+				myTurn = true;
 				gameStarted = true;
 				oppReady = false;
 			}
-			
-			repaint();
 		}
 	}
 
@@ -979,41 +1032,19 @@ public class Client extends JFrame implements ActionListener, MouseListener, Run
 		int x = e.getX() - 8;
 		int y = e.getY() - 31;
 		
+		
 		if(startPhase)
 		{
-			if(selected == 12)
-			{
-				for(int i = 0; i < 10; i++)
-				{
-					for(int i2 = 0; i2 < 10; i2++)
-					{
-						if(within(x, y, 20 + i * 50, 20 + i2 * 50, 50, 50))
-							removePiece(i, i2);
-					}
-				}
-			}
+			checkToRemove(x, y);
+			checkToPlace(x, y);
 			
-			if(selected != -2 && selected != 12)
-			{
-				for(int i = 0; i < 10; i++)
-				{
-					for(int i2 = 0; i2 < 10; i2++)
-					{
-						if(within(x, y, 20 + i * 50, 20 + i2 * 50, 50, 50))
-							placePiece(i, i2);
-					}
-				}
-			}
-		
+			//If nothing's to be removed or placed, deselect all and see if click was to select
 			deselectAll();
 			selected = -2;
 			
-			for(int i = 0; i < 13; i++)
-			{
-				if(within(x, y, 25 + i * 50, 540, 40, 40))
-					selected = i;
-			}
+			checkToSelectPlacer(x, y);
 			
+			//Select piece of correct type if a piece is selected
 			if(selected != -2)
 			{
 				selectStartPhase((selected + 2) + "");
@@ -1048,6 +1079,46 @@ public class Client extends JFrame implements ActionListener, MouseListener, Run
 		}
 	}
 	
+	public void checkToRemove(int x, int y)
+	{
+		if(selected == 12)
+		{
+			for(int i = 0; i < 10; i++)
+			{
+				for(int i2 = 0; i2 < 10; i2++)
+				{
+					if(within(x, y, 20 + i * 50, 20 + i2 * 50, 50, 50))
+						removePiece(i, i2);
+				}
+			}
+		}
+	}
+	
+	public void checkToPlace(int x, int y)
+	{
+		if(selected != -2 && selected != 12)
+		{
+			for(int i = 0; i < 10; i++)
+			{
+				for(int i2 = 0; i2 < 10; i2++)
+				{
+					if(within(x, y, 20 + i * 50, 20 + i2 * 50, 50, 50))
+						placePiece(i, i2);
+				}
+			}
+		}
+	}
+	
+	public void checkToSelectPlacer(int x, int y)
+	{
+		for(int i = 0; i < 13; i++)
+		{
+			if(within(x, y, 25 + i * 50, 540, 40, 40))
+				selected = i;
+		}
+	}
+	
+	//Check if an area is clicked
 	public boolean within(int x, int y, int x2, int y2, int length, int height)
 	{
 		if(x > x2 && x < x2 + length && y > y2 && y < y2 + height)
